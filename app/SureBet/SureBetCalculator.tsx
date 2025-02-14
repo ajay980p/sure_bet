@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 interface Result {
@@ -12,37 +12,59 @@ interface Result {
 const SureBetCalculator: React.FC = () => {
     const [odd1, setOdd1] = useState<string>('');
     const [odd2, setOdd2] = useState<string>('');
-    const [stake1, setStake1] = useState<string>('');
+    const [stake1, setStake1] = useState<string>(''); // Keep stake1 and stake2 in state as they are still interactive
     const [stake2, setStake2] = useState<string>('');
     const [totalStake, setTotalStake] = useState<string>('');
     const [result, setResult] = useState<Result | null>(null);
     const [errorMessages, setErrorMessages] = useState({
-        odd1Error: '',
-        odd2Error: '',
-        totalStakeError: '',
+        odd1Error: 'Odd 1 is required', // Initial error messages, will be cleared on focus/input
+        odd2Error: 'Odd 2 is required',
+        totalStakeError: 'Total Stake is required',
     });
 
-    const calculateStakeValues = () => {
+    const validateInputs = () => {
+        let isValid = true;
+        const newErrors = { ...errorMessages };
+
         const odd1Parsed = parseFloat(odd1);
         const odd2Parsed = parseFloat(odd2);
         const totalStakeParsed = parseFloat(totalStake);
 
-        if (
-            isNaN(odd1Parsed) ||
-            isNaN(odd2Parsed) ||
-            isNaN(totalStakeParsed) ||
-            odd1Parsed <= 0 ||
-            odd2Parsed <= 0 ||
-            totalStakeParsed <= 0
-        ) {
-            setErrorMessages({
-                odd1Error: isNaN(odd1Parsed) || odd1Parsed <= 0 ? 'Invalid Odd 1' : '',
-                odd2Error: isNaN(odd2Parsed) || odd2Parsed <= 0 ? 'Invalid Odd 2' : '',
-                totalStakeError: isNaN(totalStakeParsed) || totalStakeParsed <= 0 ? 'Invalid Total Stake' : '',
-            });
-            alert('Please enter valid positive numbers.');
-            return;
+        if (isNaN(odd1Parsed) || odd1Parsed <= 0) {
+            newErrors.odd1Error = 'Please enter a valid Odd 1 (greater than 0)';
+            isValid = false;
+        } else {
+            newErrors.odd1Error = ''; // Clear error if valid
         }
+
+        if (isNaN(odd2Parsed) || odd2Parsed <= 0) {
+            newErrors.odd2Error = 'Please enter a valid Odd 2 (greater than 0)';
+            isValid = false;
+        } else {
+            newErrors.odd2Error = ''; // Clear error if valid
+        }
+
+        if (isNaN(totalStakeParsed) || totalStakeParsed <= 0) {
+            newErrors.totalStakeError = 'Please enter a valid Total Stake (greater than 0)';
+            isValid = false;
+        } else {
+            newErrors.totalStakeError = ''; // Clear error if valid
+        }
+
+        setErrorMessages(newErrors);
+        return isValid;
+    };
+
+
+    const calculateStakeValues = () => {
+        if (!validateInputs()) { // Validate inputs first
+            return; // Stop calculation if inputs are invalid
+        }
+
+        const odd1Parsed = parseFloat(odd1);
+        const odd2Parsed = parseFloat(odd2);
+        const totalStakeParsed = parseFloat(totalStake);
+
 
         const stake1Calculated =
             (1 / odd1Parsed) /
@@ -117,156 +139,169 @@ const SureBetCalculator: React.FC = () => {
         const newTotalStake = parseFloat(value);
         if (!isNaN(newTotalStake) && newTotalStake > 0) {
             setTotalStake(value);
-            calculateStakeValues();
+            calculateStakeValues(); // Recalculate stakes when total stake changes
+        } else {
+            setErrorMessages({ ...errorMessages, totalStakeError: 'Please enter a valid Total Stake (greater than 0)' });
+            setTotalStake(''); // Optionally clear the input if it's invalid
         }
     };
 
+    const clearError = (fieldName: 'odd1Error' | 'odd2Error' | 'totalStakeError') => {
+        setErrorMessages({ ...errorMessages, [fieldName]: '' });
+    };
+
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Sure Bet Calculator</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+            <View style={styles.container}>
+                <Text style={styles.title}>Sure Bet Calculator</Text>
 
-            <View style={styles.card}>
-                <Text style={styles.inputGroupLabel}>Bet Option 1</Text>
+                <View style={styles.card}>
+                    <Text style={styles.inputGroupLabel}>Bet Option 1</Text>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Odd 1</Text>
+                        <View style={[styles.inputRow, errorMessages.odd1Error ? styles.inputRowError : null]}>
+                            <Feather name="aperture" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={odd1}
+                                onChangeText={setOdd1}
+                                placeholder="e.g., 1.80"
+                                onFocus={() => clearError('odd1Error')} // Clear specific error on focus
+                            />
+                        </View>
+                        {errorMessages.odd1Error ? <Text style={styles.errorText}>{errorMessages.odd1Error}</Text> : null}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Stake 1 (Optional)</Text>
+                        <View style={styles.inputRow}>
+                            <Feather name="arrow-up-right" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={stake1}
+                                onChangeText={handleStake1Change}
+                                placeholder="Calculated Automatically"
+                                onFocus={() => setStake1('')}
+                            />
+                        </View>
+                    </View>
+                </View>
+
+
+                <View style={styles.card}>
+                    <Text style={styles.inputGroupLabel}>Bet Option 2</Text>
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Odd 2</Text>
+                        <View style={[styles.inputRow, errorMessages.odd2Error ? styles.inputRowError : null]}>
+                            <Feather name="aperture" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={odd2}
+                                onChangeText={setOdd2}
+                                placeholder="e.g., 2.10"
+                                onFocus={() => clearError('odd2Error')} // Clear specific error on focus
+                            />
+                        </View>
+                        {errorMessages.odd2Error ? <Text style={styles.errorText}>{errorMessages.odd2Error}</Text> : null}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Stake 2 (Optional)</Text>
+                        <View style={styles.inputRow}>
+                            <Feather name="arrow-up-right" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={stake2}
+                                onChangeText={handleStake2Change}
+                                placeholder="Calculated Automatically"
+                                onFocus={() => setStake2('')}
+                            />
+                        </View>
+                    </View>
+                </View>
+
+
                 <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Odd 1</Text>
-                    <View style={[styles.inputRow, errorMessages.odd1Error ? styles.inputRowError : null]}>
-                        <Feather name="aperture" size={20} color="#888" style={styles.icon} />
+                    <Text style={styles.inputLabel}>Total Stake</Text>
+                    <View style={[styles.inputRow, errorMessages.totalStakeError ? styles.inputRowError : null]}>
+                        <Feather name="briefcase" size={20} color="#888" style={styles.icon} />
                         <TextInput
                             style={styles.input}
                             keyboardType="numeric"
-                            value={odd1}
-                            onChangeText={setOdd1}
-                            placeholder="e.g., 1.80"
-                            onFocus={() => setErrorMessages({ ...errorMessages, odd1Error: '' })} // Clear error on focus
+                            value={totalStake}
+                            onChangeText={handleTotalStakeChange}
+                            placeholder="Enter Total Stake"
+                            onFocus={() => clearError('totalStakeError')} // Clear specific error on focus
                         />
                     </View>
-                    {errorMessages.odd1Error ? <Text style={styles.errorText}>{errorMessages.odd1Error}</Text> : null}
+                    {errorMessages.totalStakeError ? <Text style={styles.errorText}>{errorMessages.totalStakeError}</Text> : null}
                 </View>
 
-                <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Stake 1 (Optional)</Text>
-                    <View style={styles.inputRow}>
-                        <Feather name="arrow-up-right" size={20} color="#888" style={styles.icon} />
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            value={stake1}
-                            onChangeText={handleStake1Change}
-                            placeholder="Calculated Automatically"
-                            onFocus={() => setStake1('')} // Clear calculated value on focus if user wants to manually input
-                        />
+
+                <TouchableOpacity style={styles.calculateButton} onPress={calculateStakeValues} disabled={!!errorMessages.odd1Error || !!errorMessages.odd2Error || !!errorMessages.totalStakeError}>
+                    <Text style={styles.buttonText}>Calculate Sure Bet</Text>
+                </TouchableOpacity>
+
+                {result && (
+                    <View style={styles.resultsCard}>
+                        <Text style={styles.resultsLabel}>Calculated Stakes & Profit</Text>
+                        <View style={styles.results}>
+                            <Text style={styles.resultText}>Stake for Option 1: <Text style={styles.resultValue}>{result.stake1.toFixed(2)}</Text></Text>
+                            <Text style={styles.resultText}>Stake for Option 2: <Text style={styles.resultValue}>{result.stake2.toFixed(2)}</Text></Text>
+                            <Text style={styles.resultText}>Total Stake: <Text style={styles.resultValue}>{totalStake}</Text></Text>
+                            <Text style={styles.resultText}>Profit: <Text style={styles.resultValue}>{result.profit.toFixed(2)}</Text></Text>
+
+                            <Text
+                                style={[
+                                    styles.profitText,
+                                    {
+                                        color: result.profit > 0 ? '#27ae60' : '#e74c3c',
+                                        fontWeight: 'bold',
+                                    },
+                                ]}
+                            >
+                                Profit Percentage: <Text style={styles.resultValue}>{result.profitPercentage}%</Text>
+                            </Text>
+                        </View>
                     </View>
-                </View>
+                )}
             </View>
-
-
-            <View style={styles.card}>
-                <Text style={styles.inputGroupLabel}>Bet Option 2</Text>
-                <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Odd 2</Text>
-                    <View style={[styles.inputRow, errorMessages.odd2Error ? styles.inputRowError : null]}>
-                        <Feather name="aperture" size={20} color="#888" style={styles.icon} />
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            value={odd2}
-                            onChangeText={setOdd2}
-                            placeholder="e.g., 2.10"
-                            onFocus={() => setErrorMessages({ ...errorMessages, odd2Error: '' })} // Clear error on focus
-                        />
-                    </View>
-                    {errorMessages.odd2Error ? <Text style={styles.errorText}>{errorMessages.odd2Error}</Text> : null}
-                </View>
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Stake 2 (Optional)</Text>
-                    <View style={styles.inputRow}>
-                        <Feather name="arrow-up-right" size={20} color="#888" style={styles.icon} />
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            value={stake2}
-                            onChangeText={handleStake2Change}
-                            placeholder="Calculated Automatically"
-                            onFocus={() => setStake2('')} // Clear calculated value on focus if user wants to manually input
-                        />
-                    </View>
-                </View>
-            </View>
-
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Total Stake</Text>
-                <View style={[styles.inputRow, errorMessages.totalStakeError ? styles.inputRowError : null]}>
-                    <Feather name="briefcase" size={20} color="#888" style={styles.icon} />
-                    <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={totalStake}
-                        onChangeText={handleTotalStakeChange}
-                        placeholder="Enter Total Stake"
-                        onFocus={() => setErrorMessages({ ...errorMessages, totalStakeError: '' })} // Clear error on focus
-                    />
-                </View>
-                {errorMessages.totalStakeError ? <Text style={styles.errorText}>{errorMessages.totalStakeError}</Text> : null}
-            </View>
-
-
-            <TouchableOpacity style={styles.calculateButton} onPress={calculateStakeValues}>
-                <Text style={styles.buttonText}>Calculate Sure Bet</Text>
-            </TouchableOpacity>
-
-            {result && (
-                <View style={styles.resultsCard}>
-                    <Text style={styles.resultsLabel}>Calculated Stakes & Profit</Text>
-                    <View style={styles.results}>
-                        <Text style={styles.resultText}>Stake for Option 1: <Text style={styles.resultValue}>{result.stake1.toFixed(2)}</Text></Text>
-                        <Text style={styles.resultText}>Stake for Option 2: <Text style={styles.resultValue}>{result.stake2.toFixed(2)}</Text></Text>
-                        <Text style={styles.resultText}>Total Stake: <Text style={styles.resultValue}>{totalStake}</Text></Text>
-                        <Text style={styles.resultText}>Profit: <Text style={styles.resultValue}>{result.profit.toFixed(2)}</Text></Text>
-
-                        <Text
-                            style={[
-                                styles.profitText,
-                                {
-                                    color: result.profit > 0 ? '#27ae60' : '#e74c3c',
-                                    fontWeight: 'bold',
-                                },
-                            ]}
-                        >
-                            Profit Percentage: <Text style={styles.resultValue}>{result.profitPercentage}%</Text>
-                        </Text>
-                    </View>
-                </View>
-            )}
-        </View>
+        </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
+    scrollContainer: {
+        paddingBottom: 20,
+    },
     container: {
         flex: 1,
         padding: 20,
-        backgroundColor: '#f0f2f5', // Softer light grey background
+        backgroundColor: '#f0f2f5',
         justifyContent: 'flex-start',
     },
     title: {
-        fontSize: 32, // Slightly larger title
+        fontSize: 32,
         fontWeight: 'bold',
-        marginBottom: 35, // More margin below title
+        marginBottom: 35,
         textAlign: 'center',
         color: '#34495e',
     },
     card: {
         backgroundColor: '#fff',
-        borderRadius: 15, // More rounded card corners
+        borderRadius: 15,
         padding: 20,
-        marginBottom: 25, // Margin below each card
+        marginBottom: 25,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.1,
         shadowRadius: 5,
-        elevation: 3, // For Android shadow
+        elevation: 3,
     },
     inputGroupLabel: {
         fontSize: 20,
@@ -281,13 +316,13 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#555',
         marginBottom: 8,
-        fontWeight: '500', // Slightly bolder input labels
+        fontWeight: '500',
     },
     inputRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#fcfcfc', // Slightly off-white input background
-        borderRadius: 12, // More rounded input corners
+        backgroundColor: '#fcfcfc',
+        borderRadius: 12,
         paddingHorizontal: 15,
         borderWidth: 1,
         borderColor: '#ddd',
@@ -303,7 +338,7 @@ const styles = StyleSheet.create({
         height: 50,
         fontSize: 18,
         flex: 1,
-        color: '#333', // Darker input text
+        color: '#333',
     },
     errorText: {
         color: '#e74c3c',
@@ -312,32 +347,32 @@ const styles = StyleSheet.create({
         marginLeft: 5,
     },
     calculateButton: {
-        backgroundColor: '#3498db', // More vibrant blue
-        paddingVertical: 16, // Slightly larger button padding
-        borderRadius: 12, // Rounded button corners
+        backgroundColor: '#3498db',
+        paddingVertical: 16,
+        borderRadius: 12,
         marginTop: 35,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
         shadowRadius: 5,
-        elevation: 4, // For Android shadow
+        elevation: 4,
     },
     buttonText: {
         color: '#fff',
-        fontSize: 19, // Slightly larger button text
+        fontSize: 19,
         fontWeight: '600',
     },
     resultsCard: {
         marginTop: 40,
-        backgroundColor: '#ffffff', // White results card background
-        padding: 25, // More padding in results card
+        backgroundColor: '#ffffff',
+        padding: 25,
         borderRadius: 15,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.15,
         shadowRadius: 5,
-        elevation: 3, // For Android shadow
+        elevation: 3,
         borderColor: '#eee',
         borderWidth: 1,
     },
@@ -346,23 +381,21 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#34495e',
         marginBottom: 20,
-        textAlign: 'center', // Center align results label
+        textAlign: 'center',
     },
-    results: {
-        // Styles for the content within the results card if needed
-    },
+    results: {},
     resultText: {
         fontSize: 18,
-        marginBottom: 10, // Slightly more spacing between result lines
+        marginBottom: 10,
         color: '#34495e',
-        fontWeight: '500', // Slightly bolder result text
+        fontWeight: '500',
     },
     resultValue: {
         fontWeight: 'bold',
         color: '#2c3e50',
     },
     profitText: {
-        fontSize: 19, // Slightly larger profit text
+        fontSize: 19,
         marginTop: 12,
     },
 });
