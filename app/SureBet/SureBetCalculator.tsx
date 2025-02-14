@@ -16,7 +16,7 @@ const SureBetCalculator: React.FC = () => {
     const [totalStake, setTotalStake] = useState<string>(''); // Total stake amount
     const [result, setResult] = useState<Result | null>(null); // Result state
 
-    // Function to calculate Stake 1 and Stake 2 based on odds and total stake
+    // Correct function to calculate Stake 1 and Stake 2 based on odds and total stake
     const calculateStakeValues = () => {
         const odd1Parsed = parseFloat(odd1);
         const odd2Parsed = parseFloat(odd2);
@@ -44,22 +44,29 @@ const SureBetCalculator: React.FC = () => {
             ((1 / odd1Parsed) + (1 / odd2Parsed)) *
             totalStakeParsed;
 
-        // Calculate profit (assuming you win one of the bets)
-        const profit = totalStakeParsed - (stake1Calculated + stake2Calculated);
+        // Calculate the arbitrage profit percentage
+        const arbitragePercentage =
+            ((1 / odd1Parsed) + (1 / odd2Parsed) - 1) * 100;
 
-        // Calculate profit percentage
-        const profitPercentage = (profit / totalStakeParsed) * 100;
+        // Round the profit percentage to 2 decimal places
+        const roundedProfitPercentage = arbitragePercentage.toFixed(2);
+
+        // Calculate profit assuming you win one of the bets (guaranteed profit)
+        const profit = totalStakeParsed - (stake1Calculated + stake2Calculated);
 
         setResult({
             stake1: stake1Calculated,
             stake2: stake2Calculated,
             profit,
-            profitPercentage,
+            profitPercentage: parseFloat(roundedProfitPercentage), // Set the rounded value
         });
 
         setStake1(stake1Calculated.toFixed(2));
         setStake2(stake2Calculated.toFixed(2));
     };
+
+
+
 
     // Handle manual change for Stake 1
     const handleStake1Change = (value: string) => {
@@ -87,6 +94,7 @@ const SureBetCalculator: React.FC = () => {
             });
         }
     };
+
 
     // Handle manual change for Stake 2
     const handleStake2Change = (value: string) => {
@@ -123,6 +131,8 @@ const SureBetCalculator: React.FC = () => {
             calculateStakeValues(); // Recalculate stake values when total stake changes
         }
     };
+
+    { console.log("Percentage is ", result && typeof result.profitPercentage) }
 
     return (
         <View style={styles.container}>
@@ -193,6 +203,7 @@ const SureBetCalculator: React.FC = () => {
                     >
                         Profit Percentage: {result.profitPercentage}%
                     </Text>
+
                 </View>
             )}
         </View>
