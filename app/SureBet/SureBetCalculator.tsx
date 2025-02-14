@@ -153,7 +153,9 @@ const SureBetCalculator: React.FC = () => {
 
     return (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
+
             <View style={styles.container}>
+
                 <Text style={styles.title}>Sure Bet Calculator</Text>
 
                 <View style={styles.card}>
@@ -175,25 +177,6 @@ const SureBetCalculator: React.FC = () => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Stake 1 (Optional)</Text>
-                        <View style={styles.inputRow}>
-                            <Feather name="arrow-up-right" size={20} color="#888" style={styles.icon} />
-                            <TextInput
-                                style={styles.input}
-                                keyboardType="numeric"
-                                value={stake1}
-                                onChangeText={handleStake1Change}
-                                placeholder="Calculated Automatically"
-                                onFocus={() => setStake1('')}
-                            />
-                        </View>
-                    </View>
-                </View>
-
-
-                <View style={styles.card}>
-                    <Text style={styles.inputGroupLabel}>Bet Option 2</Text>
-                    <View style={styles.inputGroup}>
                         <Text style={styles.inputLabel}>Odd 2</Text>
                         <View style={[styles.inputRow, errorMessages.odd2Error ? styles.inputRowError : null]}>
                             <Feather name="aperture" size={20} color="#888" style={styles.icon} />
@@ -207,6 +190,41 @@ const SureBetCalculator: React.FC = () => {
                             />
                         </View>
                         {errorMessages.odd2Error ? <Text style={styles.errorText}>{errorMessages.odd2Error}</Text> : null}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Total Stake</Text>
+                        <View style={[styles.inputRow, errorMessages.totalStakeError ? styles.inputRowError : null]}>
+                            <Feather name="briefcase" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={totalStake}
+                                onChangeText={handleTotalStakeChange}
+                                placeholder="Enter Total Stake"
+                                onFocus={() => clearError('totalStakeError')} // Clear specific error on focus
+                            />
+                        </View>
+                        {errorMessages.totalStakeError ? <Text style={styles.errorText}>{errorMessages.totalStakeError}</Text> : null}
+                    </View>
+                </View>
+
+                <View style={styles.card}>
+                    <Text style={styles.inputGroupLabel}>Stake required</Text>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Stake 1 (Optional)</Text>
+                        <View style={styles.inputRow}>
+                            <Feather name="arrow-up-right" size={20} color="#888" style={styles.icon} />
+                            <TextInput
+                                style={styles.input}
+                                keyboardType="numeric"
+                                value={stake1}
+                                onChangeText={handleStake1Change}
+                                placeholder="Calculated Automatically"
+                                onFocus={() => setStake1('')}
+                            />
+                        </View>
                     </View>
 
                     <View style={styles.inputGroup}>
@@ -224,24 +242,6 @@ const SureBetCalculator: React.FC = () => {
                         </View>
                     </View>
                 </View>
-
-
-                <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Total Stake</Text>
-                    <View style={[styles.inputRow, errorMessages.totalStakeError ? styles.inputRowError : null]}>
-                        <Feather name="briefcase" size={20} color="#888" style={styles.icon} />
-                        <TextInput
-                            style={styles.input}
-                            keyboardType="numeric"
-                            value={totalStake}
-                            onChangeText={handleTotalStakeChange}
-                            placeholder="Enter Total Stake"
-                            onFocus={() => clearError('totalStakeError')} // Clear specific error on focus
-                        />
-                    </View>
-                    {errorMessages.totalStakeError ? <Text style={styles.errorText}>{errorMessages.totalStakeError}</Text> : null}
-                </View>
-
 
                 <TouchableOpacity style={styles.calculateButton} onPress={calculateStakeValues} disabled={!!errorMessages.odd1Error || !!errorMessages.odd2Error || !!errorMessages.totalStakeError}>
                     <Text style={styles.buttonText}>Calculate Sure Bet</Text>
@@ -277,18 +277,18 @@ const SureBetCalculator: React.FC = () => {
 
 const styles = StyleSheet.create({
     scrollContainer: {
-        paddingBottom: 20,
+        paddingTop: 40
     },
     container: {
         flex: 1,
-        padding: 20,
+        padding: 15,
         backgroundColor: '#f0f2f5',
         justifyContent: 'flex-start',
     },
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        marginBottom: 35,
+        marginBottom: 10,
         textAlign: 'center',
         color: '#34495e',
     },
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderRadius: 15,
         padding: 20,
-        marginBottom: 25,
+        marginBottom: 15,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.1,
@@ -321,6 +321,7 @@ const styles = StyleSheet.create({
     inputRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: '#fcfcfc',
         borderRadius: 12,
         paddingHorizontal: 15,
@@ -335,8 +336,8 @@ const styles = StyleSheet.create({
         color: '#777',
     },
     input: {
-        height: 50,
-        fontSize: 18,
+        height: 40,
+        fontSize: 15,
         flex: 1,
         color: '#333',
     },
@@ -348,9 +349,9 @@ const styles = StyleSheet.create({
     },
     calculateButton: {
         backgroundColor: '#3498db',
-        paddingVertical: 16,
+        paddingVertical: 10,
         borderRadius: 12,
-        marginTop: 35,
+        marginTop: 4,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     resultsCard: {
-        marginTop: 40,
+        marginTop: 15,
         backgroundColor: '#ffffff',
         padding: 25,
         borderRadius: 15,
