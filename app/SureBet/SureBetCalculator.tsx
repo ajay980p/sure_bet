@@ -76,12 +76,8 @@ const SureBetCalculator: React.FC = () => {
             arbitrageSumInverseOdds * // Use the correct sum here
             totalStakeParsed;
 
-        console.log("Odds used for calculation: ", stake1Calculated, stake2Calculated)
-
         const payout1Calculated = stake1Calculated * odd1Parsed; // Calculate payout for Bet 1
         const payout2Calculated = stake2Calculated * odd2Parsed; // Calculate payout for Bet 2
-
-        console.log("Payout 1 and Payout 2 : ", payout1Calculated, payout2Calculated, totalStakeParsed)
 
         const profit = payout1Calculated - totalStakeParsed; // Correct Profit Calculation (using payout1, could use payout2 as well)
         const profitPercentage = (profit / totalStakeParsed) * 100; // Correct Profit Percentage Calculation
@@ -279,19 +275,12 @@ const SureBetCalculator: React.FC = () => {
                             />
                         </View>
                     </View>
-                </View>
 
-
-                {result && (
-                    <View style={styles.resultsCard}>
-                        <Text style={styles.resultsLabel}>Calculation Results</Text>
-                        <View style={styles.results}>
-                            <Text style={styles.resultText}>Stake Bet 1: <Text style={styles.resultValue}>{result.stake1.toFixed(2)}</Text></Text>
-                            <Text style={styles.resultText}>Stake Bet 2: <Text style={styles.resultValue}>{result.stake2.toFixed(2)}</Text></Text>
-                            <Text style={styles.resultText}>Total Stake: <Text style={styles.resultValue}>{totalStake}</Text></Text>
-                            <Text style={styles.resultText}>Potential Payout Bet 1: <Text style={styles.resultValue}>{result.payout1.toFixed(2)}</Text></Text>
-                            <Text style={styles.resultText}>Potential Payout Bet 2: <Text style={styles.resultValue}>{result.payout2.toFixed(2)}</Text></Text>
-                            <Text style={styles.resultText}>Total Profit: <Text style={styles.resultValue}>{result.profit.toFixed(2)}</Text></Text>
+                    {result && (
+                        <View style={styles.results}> {/* Changed to styles.results - removed resultsCard and directly using results style within the same card */}
+                            <Text style={styles.resultText}>Total Stake : <Text style={styles.resultValue}>{totalStake}</Text></Text>
+                            <Text style={styles.resultText}>Total Payout : <Text style={styles.resultValue}>{parseFloat(totalStake) + parseFloat(result.profit.toFixed(2))}</Text></Text>
+                            <Text style={styles.resultText}>Total Profit : <Text style={styles.resultValue}>{result.profit.toFixed(2)}</Text></Text>
 
                             <Text
                                 style={[
@@ -305,8 +294,8 @@ const SureBetCalculator: React.FC = () => {
                                 ROI (Return on Investment): <Text style={styles.resultValue}>{result.profitPercentage}%</Text>
                             </Text>
                         </View>
-                    </View>
-                )}
+                    )}
+                </View>
             </View>
         </ScrollView>
     );
@@ -377,7 +366,7 @@ const styles = StyleSheet.create({
         fontSize: 18, // Increased icon size
     },
     input: {
-        height: 40, // Increased height to match inputRow
+        height: 55, // Increased height to match inputRow
         fontSize: 16, // Increased input text size
         flex: 1,
         color: '#333',
@@ -450,7 +439,7 @@ const styles = StyleSheet.create({
     },
     resultText: {
         fontSize: 17, // Increased result text size
-        marginBottom: 12, // Increased marginBottom for result text
+        marginBottom: 5, // Increased marginBottom for result text
         color: '#4a6572',
         fontWeight: '500',
         lineHeight: 24, // Increased line height for results
@@ -461,7 +450,6 @@ const styles = StyleSheet.create({
     },
     profitText: {
         fontSize: 20, // Increased profit text size
-        marginTop: 15, // Increased marginTop for profit text
         fontWeight: '700', // Made profit text bolder
         textAlign: 'center',
         color: '#27ae60',
