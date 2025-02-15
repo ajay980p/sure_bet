@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react'; // Import useRef
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -22,6 +22,7 @@ const SureBetCalculator: React.FC = () => {
         odd2Error: '',
         totalStakeError: '',
     });
+    const calculationTimeout = useRef<ReturnType<typeof setTimeout>>(null); // useRef for debouncing
 
     const validateInputs = () => {
         let isValid = true;
@@ -153,7 +154,9 @@ const SureBetCalculator: React.FC = () => {
         const newTotalStake = parseFloat(value);
         if (!isNaN(newTotalStake) && newTotalStake > 0) {
             setTotalStake(value);
-            calculateStakeValues();
+            // Debounce calculateStakeValues to prevent excessive calculations
+            // clearTimeout(calculationTimeout.current); // Clear any existing timeout
+            // calculationTimeout.current = setTimeout(calculateStakeValues, 500); // Wait 500ms after typing stops
         } else {
             setErrorMessages({ ...errorMessages, totalStakeError: 'Enter valid Total Stake (> 0)' });
             setTotalStake('');
@@ -247,7 +250,7 @@ const SureBetCalculator: React.FC = () => {
                 <View style={styles.card}>
                     <Text style={styles.inputGroupLabel}>Optional Stake Adjustment</Text>
                     <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Stake 1</Text>
+                        <Text style={styles.inputLabel}>Stake 1 amount</Text>
                         <View style={styles.inputRow}>
                             <Feather name="arrow-up-right" size={18} color="#888" style={styles.icon} />
                             <TextInput
@@ -262,7 +265,7 @@ const SureBetCalculator: React.FC = () => {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.inputLabel}>Stake 2</Text>
+                        <Text style={styles.inputLabel}>Stake 2 amount</Text>
                         <View style={styles.inputRow}>
                             <Feather name="arrow-up-right" size={18} color="#888" style={styles.icon} />
                             <TextInput
@@ -414,13 +417,13 @@ const styles = StyleSheet.create({
         fontSize: 18, // Increased button text size
         fontWeight: '600',
     },
-    resultsCard: {
-        marginTop: 20, // Increased marginTop for results card
+    results: { // Removed resultsCard and updated style name to results
+        marginTop: 20, // Increased marginTop for results section
         backgroundColor: '#f0f0f5',
-        padding: 20, // Increased padding for results card
-        borderRadius: 15, // Increased borderRadius for results card
+        padding: 20, // Increased padding for results section
+        borderRadius: 15, // Increased borderRadius for results section
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 }, // Increased shadow for results card
+        shadowOffset: { width: 0, height: 3 }, // Increased shadow for results section
         shadowOpacity: 0.15, // Slightly increased shadow opacity
         shadowRadius: 4, // Adjusted shadow radius
         elevation: 3, // Increased elevation
@@ -433,9 +436,6 @@ const styles = StyleSheet.create({
         color: '#34495e',
         marginBottom: 15, // Increased marginBottom for results label
         textAlign: 'center',
-    },
-    results: {
-        paddingHorizontal: 10, // Increased padding in results
     },
     resultText: {
         fontSize: 17, // Increased result text size
