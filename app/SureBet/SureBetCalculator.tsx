@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react'; // Import useRef
+import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -7,9 +7,12 @@ interface Result {
     stake2: number;
     profit: number;
     profitPercentage: number;
-    payout1: number; // Added payout for Bet 1
-    payout2: number; // Added payout for Bet 2
+    payout1: number;
+    payout2: number;
+    originalStake1Ratio?: number; // Store the original stake1 ratio
+    originalStake2Ratio?: number; // Store the original stake2 ratio
 }
+
 const SureBetCalculator: React.FC = () => {
     const [odd1, setOdd1] = useState<string>('');
     const [odd2, setOdd2] = useState<string>('');
@@ -22,8 +25,9 @@ const SureBetCalculator: React.FC = () => {
         odd2Error: '',
         totalStakeError: '',
     });
+    const [isCalculated, setIsCalculated] = useState<boolean>(false);
 
-    const validateInputs = useCallback(() => { // Use useCallback
+    const validateInputs = useCallback(() => {
         let isValid = true;
         const newErrors = { ...errorMessages };
 
@@ -54,10 +58,10 @@ const SureBetCalculator: React.FC = () => {
 
         setErrorMessages(newErrors);
         return isValid;
-    }, [odd1, odd2, totalStake, errorMessages]); // Dependencies for useCallback
+    }, [odd1, odd2, totalStake, errorMessages]);
 
 
-    const calculateStakeValues = useCallback(() => { // Use useCallback
+    const calculateStakeValues = useCallback(() => {
         if (!validateInputs()) {
             return;
         }
@@ -66,151 +70,181 @@ const SureBetCalculator: React.FC = () => {
         const odd2Parsed = parseFloat(odd2);
         const totalStakeParsed = parseFloat(totalStake);
 
-        const arbitrageSumInverseOdds = (1 / odd1Parsed) + (1 / odd2Parsed); // Correct Arbitrage sum of inverse odds
+        const arbitrageSumInverseOdds = (1 / odd1Parsed) + (1 / odd2Parsed);
         const stake1Calculated =
             (1 / odd1Parsed) /
-            arbitrageSumInverseOdds * // Use the correct sum here
+            arbitrageSumInverseOdds *
             totalStakeParsed;
         const stake2Calculated =
             (1 / odd2Parsed) /
-            arbitrageSumInverseOdds * // Use the correct sum here
+            arbitrageSumInverseOdds *
             totalStakeParsed;
 
-        const payout1Calculated = stake1Calculated * odd1Parsed; // Calculate payout for Bet 1
-        const payout2Calculated = stake2Calculated * odd2Parsed; // Calculate payout for Bet 2
+        const payout1Calculated = stake1Calculated * odd1Parsed;
+        const payout2Calculated = stake2Calculated * odd2Parsed;
 
-        const profit = payout1Calculated - totalStakeParsed; // Correct Profit Calculation (using payout1, could use payout2 as well)
-        const profitPercentage = (profit / totalStakeParsed) * 100; // Correct Profit Percentage Calculation
-        const roundedProfitPercentage = profitPercentage.toFixed(2); // Round percentage to 2 decimal places
+        const profit = payout1Calculated - totalStakeParsed;
+        const profitPercentage = (profit / totalStakeParsed) * 100;
+        const roundedProfitPercentage = profitPercentage.toFixed(2);
 
         setResult({
             stake1: stake1Calculated,
             stake2: stake2Calculated,
-            profit: profit, // Use the corrected profit
-            profitPercentage: parseFloat(roundedProfitPercentage), // Use corrected profit percentage
+            profit: profit,
+            profitPercentage: parseFloat(roundedProfitPercentage),
             payout1: payout1Calculated,
             payout2: payout2Calculated,
+            originalStake1Ratio: stake1Calculated / totalStakeParsed, // Store ratio
+            originalStake2Ratio: stake2Calculated / totalStakeParsed, // Store ratio
         });
 
         setStake1(stake1Calculated.toFixed(2));
         setStake2(stake2Calculated.toFixed(2));
-    }, [odd1, odd2, totalStake, validateInputs]); // Dependencies for useCallback
+        setIsCalculated(true);
+    }, [odd1, odd2, totalStake, validateInputs]);
 
     const handleTotalStakeChange = useCallback((value: string) => {
         const newTotalStake = parseFloat(value);
         if (!isNaN(newTotalStake) && newTotalStake > 0) {
             setTotalStake(value);
+            if (isCalculated) {
+                calculateStakeValues();
+            }
         } else {
             setErrorMessages({ ...errorMessages, totalStakeError: 'Enter valid Total Stake (> 0)' });
             setTotalStake('');
+            setIsCalculated(false);
+            setResult(null);
         }
-    }, [errorMessages]);
+    }, [errorMessages, isCalculated, calculateStakeValues]);
 
     const handleStake1Change = useCallback((value: string) => {
-        const data = result?.payout1 / result?.payout2;
-
-        console.log("Data printing handleStake1Change : ", data)
         const newStake1 = parseFloat(value);
+
         if (!isNaN(newStake1) && newStake1 >= 0) {
-            const odd1Parsed = parseFloat(odd1);
-            const odd2Parsed = parseFloat(odd2);
-            const totalStakeParsed = parseFloat(totalStake);
+            if (result) { // If calculation has been done and we have a result
+                const originalTotalStake = parseFloat(totalStake); // Use current totalStake for ratio calculation
+                const originalStake1Ratio = result.originalStake1Ratio || 0;
+                const originalStake2Ratio = result.originalStake2Ratio || 0;
 
-            if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && !isNaN(totalStakeParsed) && odd1Parsed > 0 && odd2Parsed > 0 && totalStakeParsed > 0) {
-                const stake2Calculated =
-                    ((1 / odd2Parsed) * totalStakeParsed - newStake1 * (1 / odd1Parsed)) /
-                    ((1 / odd1Parsed) + (1 / odd2Parsed));
+                const newTotalStake = newStake1 / originalStake1Ratio; // Calculate new total stake based on stake1 and original ratio
+                const newStake2 = newTotalStake * originalStake2Ratio;
 
-                if (stake2Calculated >= 0) { // Ensure stake2 is not negative
+
+                const odd1Parsed = parseFloat(odd1);
+                const odd2Parsed = parseFloat(odd2);
+
+                if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && odd1Parsed > 0 && odd2Parsed > 0) {
+
+
                     const payout1Calculated = newStake1 * odd1Parsed;
-                    const payout2Calculated = stake2Calculated * odd2Parsed;
-                    const profit = payout1Calculated - totalStakeParsed;
-                    const profitPercentage = (profit / totalStakeParsed) * 100;
+                    const payout2Calculated = newStake2 * odd2Parsed;
+                    const profit = payout1Calculated - newTotalStake; // Profit based on new total stake
+                    const profitPercentage = (profit / newTotalStake) * 100;
                     const roundedProfitPercentage = profitPercentage.toFixed(2);
 
                     setStake1(value);
-                    setStake2(stake2Calculated.toFixed(2));
-                    setTotalStake((newStake1 + stake2Calculated).toFixed(2)); // Update total stake here
+                    setStake2(newStake2.toFixed(2));
+                    setTotalStake(newTotalStake.toFixed(2));
 
                     setResult({
                         stake1: newStake1,
-                        stake2: stake2Calculated,
-                        profit: profit,
-                        profitPercentage: parseFloat(roundedProfitPercentage),
-                        payout1: payout1Calculated,
-                        payout2: payout2Calculated,
-                    });
-                } else {
-                    setStake1(value);
-                    setStake2('0.00'); // Or handle negative stake2 as needed, perhaps set error
-                    setTotalStake(value); // If stake2 is 0, total stake becomes stake1
-                    setResult(null); // Clear results as it's no longer a sure bet scenario
-                }
-            } else {
-                setStake1(value);
-                setStake2('Auto'); // Indicate auto calculation is pending valid odds/stake
-                setTotalStake(value); // Total stake becomes stake1 if auto
-                setResult(null);
-            }
-        } else {
-            setStake1(value);
-            setStake2('Auto');
-            setTotalStake(value); // Total stake becomes stake1 if auto
-            setResult(null);
-        }
-    }, [odd1, odd2, totalStake, setResult, setStake1, setStake2, setTotalStake]); // ADDED setTotalStake dependency
-
-    const handleStake2Change = useCallback((value: string) => {
-        const newStake2 = parseFloat(value);
-        if (!isNaN(newStake2) && newStake2 >= 0) {
-            const odd1Parsed = parseFloat(odd1);
-            const odd2Parsed = parseFloat(odd2);
-            const totalStakeParsed = parseFloat(totalStake);
-
-            if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && !isNaN(totalStakeParsed) && odd1Parsed > 0 && odd2Parsed > 0 && totalStakeParsed > 0) {
-
-                const stake1Calculated =
-                    ((1 / odd1Parsed) * totalStakeParsed - newStake2 * (1 / odd2Parsed)) /
-                    ((1 / odd1Parsed) + (1 / odd2Parsed));
-
-                if (stake1Calculated >= 0) { // Ensure stake1 is not negative
-
-                    const payout1Calculated = stake1Calculated * odd1Parsed;
-                    const payout2Calculated = newStake2 * odd2Parsed;
-                    const profit = payout1Calculated - totalStakeParsed;
-                    const profitPercentage = (profit / totalStakeParsed) * 100;
-                    const roundedProfitPercentage = profitPercentage.toFixed(2);
-
-                    setStake2(value);
-                    setStake1(stake1Calculated.toFixed(2));
-                    setTotalStake((newStake2 + stake1Calculated).toFixed(2)); // Update total stake here
-                    setResult({
-                        stake1: stake1Calculated,
                         stake2: newStake2,
                         profit: profit,
                         profitPercentage: parseFloat(roundedProfitPercentage),
                         payout1: payout1Calculated,
                         payout2: payout2Calculated,
+                        originalStake1Ratio: originalStake1Ratio, // Keep original ratios
+                        originalStake2Ratio: originalStake2Ratio,
                     });
-                } else {
-                    setStake2(value);
-                    setStake1('0.00'); // Or handle negative stake1 as needed, perhaps set error
-                    setTotalStake(value); // If stake1 is 0, total stake becomes stake2
-                    setResult(null); // Clear results as it's no longer a sure bet scenario
+                    setIsCalculated(true);
+
+                } else { // Should not happen ideally as odds are validated before calculation, but for safety
+                    setStake1(value);
+                    setStake2('Auto');
+                    setTotalStake('Auto');
+                    setResult(null);
+                    setIsCalculated(false);
                 }
-            } else {
+
+
+            } else { // No previous calculation
+                setStake1(value);
+                setStake2('Auto');
+                setTotalStake(value); // Total stake becomes stake1 if auto
+                setResult(null);
+                setIsCalculated(false);
+            }
+        } else {
+            setStake1(value);
+            setStake2('Auto');
+            setTotalStake(value);
+            setResult(null);
+            setIsCalculated(false);
+        }
+    }, [odd1, odd2, result, setResult, setStake1, setStake2, setTotalStake, setIsCalculated]);
+
+    const handleStake2Change = useCallback((value: string) => {
+        const newStake2 = parseFloat(value);
+        if (!isNaN(newStake2) && newStake2 >= 0) {
+            if (result) { // If calculation has been done
+                const originalTotalStake = parseFloat(totalStake);
+                const originalStake1Ratio = result.originalStake1Ratio || 0;
+                const originalStake2Ratio = result.originalStake2Ratio || 0;
+
+                const newTotalStake = newStake2 / originalStake2Ratio;
+                const newStake1 = newTotalStake * originalStake1Ratio;
+
+
+                const odd1Parsed = parseFloat(odd1);
+                const odd2Parsed = parseFloat(odd2);
+
+                if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && odd1Parsed > 0 && odd2Parsed > 0) {
+
+                    const payout1Calculated = newStake1 * odd1Parsed;
+                    const payout2Calculated = newStake2 * odd2Parsed;
+                    const profit = payout2Calculated - newTotalStake; // Profit based on payout 2 and new total stake
+                    const profitPercentage = (profit / newTotalStake) * 100;
+                    const roundedProfitPercentage = profitPercentage.toFixed(2);
+
+                    setStake2(value);
+                    setStake1(newStake1.toFixed(2));
+                    setTotalStake(newTotalStake.toFixed(2));
+                    setResult({
+                        stake1: newStake1,
+                        stake2: newStake2,
+                        profit: profit,
+                        profitPercentage: parseFloat(roundedProfitPercentage),
+                        payout1: payout1Calculated,
+                        payout2: payout2Calculated,
+                        originalStake1Ratio: originalStake1Ratio, // Keep original ratios
+                        originalStake2Ratio: originalStake2Ratio,
+                    });
+                    setIsCalculated(true);
+                } else { // Safety check for odds validity
+                    setStake1('Auto');
+                    setStake2(value);
+                    setTotalStake('Auto');
+                    setResult(null);
+                    setIsCalculated(false);
+                }
+
+            } else { // No previous calculation
                 setStake2(value);
-                setStake1('Auto'); // Indicate auto calculation is pending valid odds/stake
+                setStake1('Auto');
                 setTotalStake(value); // Total stake becomes stake2 if auto
                 setResult(null);
+                setIsCalculated(false);
             }
+
         } else {
             setStake2(value);
             setStake1('Auto');
-            setTotalStake(value); // Total stake becomes stake2 if auto
+            setTotalStake(value);
             setResult(null);
+            setIsCalculated(false);
         }
-    }, [odd1, odd2, totalStake, setResult, setStake1, setStake2, setTotalStake]); // ADDED setTotalStake dependency
+    }, [odd1, odd2, result, setResult, setStake1, setStake2, setTotalStake, setIsCalculated]);
 
 
     const clearError = (fieldName: 'odd1Error' | 'odd2Error' | 'totalStakeError') => {
@@ -229,6 +263,7 @@ const SureBetCalculator: React.FC = () => {
             odd2Error: '',
             totalStakeError: '',
         });
+        setIsCalculated(false);
     };
 
     return (
@@ -308,7 +343,6 @@ const SureBetCalculator: React.FC = () => {
                                 value={stake1}
                                 onChangeText={handleStake1Change}
                                 placeholder="Auto"
-                                onFocus={() => setStake1('')}
                             />
                         </View>
                     </View>
@@ -323,7 +357,6 @@ const SureBetCalculator: React.FC = () => {
                                 value={stake2}
                                 onChangeText={handleStake2Change}
                                 placeholder="Auto"
-                                onFocus={() => setStake2('')}
                             />
                         </View>
                     </View>
@@ -331,7 +364,7 @@ const SureBetCalculator: React.FC = () => {
                     {result && (
                         <View style={styles.results}>
                             <Text style={styles.resultText}>Total Stake : <Text style={styles.resultValue}>{totalStake}</Text></Text>
-                            <Text style={styles.resultText}>Total Payout : <Text style={styles.resultValue}>{parseFloat(totalStake) + parseFloat(result.profit.toFixed(2))}</Text></Text>
+                            <Text style={styles.resultText}>Total Payout : <Text style={styles.resultValue}>{(parseFloat(totalStake) + parseFloat(result.profit.toFixed(2))).toFixed(2)}</Text></Text>
                             <Text style={styles.resultText}>Total Profit : <Text style={styles.resultValue}>{result.profit.toFixed(2)}</Text></Text>
 
                             <Text
@@ -343,7 +376,7 @@ const SureBetCalculator: React.FC = () => {
                                     },
                                 ]}
                             >
-                                ROI (Return on Investment): <Text style={styles.resultValue}>{result.profitPercentage}%</Text>
+                                ROI (Return On Investment): <Text style={styles.resultValue}>{result.profitPercentage}%</Text>
                             </Text>
                         </View>
                     )}
@@ -362,40 +395,40 @@ const styles = StyleSheet.create({
         padding: 10,
         paddingTop: 25,
         backgroundColor: '#f0f2f5',
-        justifyContent: 'center', // Center content vertically
+        justifyContent: 'center',
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        marginBottom: 15, // Increased marginBottom for title
+        marginBottom: 15,
         textAlign: 'center',
         color: '#34495e',
     },
     card: {
         backgroundColor: '#fff',
         borderRadius: 12,
-        padding: 18, // Slightly increased padding for cards
-        marginBottom: 15, // Increased marginBottom for cards
+        padding: 18,
+        marginBottom: 15,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 }, // Slightly increased shadow
-        shadowOpacity: 0.15, // Slightly increased shadow opacity
-        shadowRadius: 4, // Slightly adjusted shadow radius
-        elevation: 3, // Slightly increased elevation
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 3,
     },
     inputGroupLabel: {
-        fontSize: 20, // Increased label size
+        fontSize: 20,
         fontWeight: '600',
         color: '#34495e',
-        marginBottom: 12, // Increased marginBottom for labels
-        textAlign: 'center', // Center Input Group Labels
+        marginBottom: 12,
+        textAlign: 'center',
     },
     inputGroup: {
-        marginBottom: 12, // Increased marginBottom for input groups
+        marginBottom: 12,
     },
     inputLabel: {
-        fontSize: 16, // Increased input label size
+        fontSize: 16,
         color: '#555',
-        marginBottom: 6, // Adjusted marginBottom for input labels
+        marginBottom: 6,
         fontWeight: '500',
     },
     inputRow: {
@@ -404,102 +437,102 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#fcfcfc',
         borderRadius: 10,
-        paddingHorizontal: 12, // Increased padding in input row
+        paddingHorizontal: 12,
         borderWidth: 1,
         borderColor: '#ddd',
-        height: 40, // Slightly increased input height
+        height: 40,
     },
     inputRowError: {
         borderColor: '#e74c3c',
     },
     icon: {
-        marginRight: 10, // Increased icon margin
+        marginRight: 10,
         color: '#777',
-        fontSize: 18, // Increased icon size
+        fontSize: 18,
     },
     input: {
-        height: 55, // Increased height to match inputRow
-        fontSize: 16, // Increased input text size
+        height: 55,
+        fontSize: 16,
         flex: 1,
         color: '#333',
     },
     errorText: {
         color: '#e74c3c',
-        fontSize: 13, // Slightly increased error text size
-        marginTop: 4, // Adjusted marginTop for error text
-        marginLeft: 4, // Adjusted marginLeft for error text
+        fontSize: 13,
+        marginTop: 4,
+        marginLeft: 4,
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around', // Evenly space buttons
-        marginTop: 10, // Increased marginTop for buttons
-        marginBottom: 20, // Increased marginTop for buttons
+        justifyContent: 'space-around',
+        marginTop: 10,
+        marginBottom: 20,
     },
     calculateButton: {
         backgroundColor: '#3498db',
-        paddingVertical: 10, // Increased button padding
-        borderRadius: 12, // Increased button borderRadius
+        paddingVertical: 10,
+        borderRadius: 12,
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 }, // Increased button shadow
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
-        shadowRadius: 4, // Adjusted button shadow radius
-        elevation: 4, // Increased button elevation
+        shadowRadius: 4,
+        elevation: 4,
         flex: 1,
-        marginHorizontal: 5, // Adjusted button horizontal margin
+        marginHorizontal: 5,
     },
     resetButton: {
         backgroundColor: '#e07a5f',
-        paddingVertical: 10, // Increased button padding
-        borderRadius: 12, // Increased button borderRadius
+        paddingVertical: 10,
+        borderRadius: 12,
         alignItems: 'center',
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 }, // Increased button shadow
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
-        shadowRadius: 4, // Adjusted button shadow radius
-        elevation: 4, // Increased button elevation
+        shadowRadius: 4,
+        elevation: 4,
         flex: 1,
-        marginHorizontal: 5, // Adjusted button horizontal margin
+        marginHorizontal: 5,
     },
     buttonText: {
         color: '#fff',
-        fontSize: 18, // Increased button text size
+        fontSize: 18,
         fontWeight: '600',
     },
-    results: { // Removed resultsCard and updated style name to results
-        marginTop: 20, // Increased marginTop for results section
+    results: {
+        marginTop: 20,
         backgroundColor: '#f0f0f5',
-        padding: 20, // Increased padding for results section
-        borderRadius: 15, // Increased borderRadius for results section
+        padding: 20,
+        borderRadius: 15,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 }, // Increased shadow for results section
-        shadowOpacity: 0.15, // Slightly increased shadow opacity
-        shadowRadius: 4, // Adjusted shadow radius
-        elevation: 3, // Increased elevation
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 3,
         borderColor: '#ddd',
         borderWidth: 1,
     },
     resultsLabel: {
-        fontSize: 24, // Increased results label size
+        fontSize: 24,
         fontWeight: '700',
         color: '#34495e',
-        marginBottom: 15, // Increased marginBottom for results label
+        marginBottom: 15,
         textAlign: 'center',
     },
     resultText: {
-        fontSize: 17, // Increased result text size
-        marginBottom: 5, // Increased marginBottom for result text
+        fontSize: 17,
+        marginBottom: 5,
         color: '#4a6572',
         fontWeight: '500',
-        lineHeight: 24, // Increased line height for results
+        lineHeight: 24,
     },
     resultValue: {
         fontWeight: 'bold',
         color: '#2c3e50',
     },
     profitText: {
-        fontSize: 20, // Increased profit text size
-        fontWeight: '700', // Made profit text bolder
+        fontSize: 20,
+        fontWeight: '700',
         textAlign: 'center',
         color: '#27ae60',
     },
