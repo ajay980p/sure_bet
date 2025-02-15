@@ -1,8 +1,7 @@
-// components/StakeInput.js (or StakeInput.tsx)
 import React from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import styles from './Styles';
+import styles from './styles';
 
 interface StakeInputProps {
     value: string;

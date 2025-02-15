@@ -1,4 +1,3 @@
-// components/OddInput.js (or OddInput.tsx)
 import React from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
