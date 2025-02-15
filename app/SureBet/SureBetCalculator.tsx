@@ -1,5 +1,5 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 interface Result {
@@ -9,8 +9,8 @@ interface Result {
     profitPercentage: number;
     payout1: number;
     payout2: number;
-    originalStake1Ratio?: number; // Store the original stake1 ratio
-    originalStake2Ratio?: number; // Store the original stake2 ratio
+    originalStake1Ratio?: number;
+    originalStake2Ratio?: number;
 }
 
 const SureBetCalculator: React.FC = () => {
@@ -35,22 +35,31 @@ const SureBetCalculator: React.FC = () => {
         const odd2Parsed = parseFloat(odd2);
         const totalStakeParsed = parseFloat(totalStake);
 
-        if (isNaN(odd1Parsed) || odd1Parsed <= 0) {
+        if (isNaN(odd1Parsed)) {
+            newErrors.odd1Error = 'Please enter a valid number for Odd 1';
+            isValid = false;
+        } else if (odd1Parsed <= 0) {
             newErrors.odd1Error = 'Enter valid Odd 1 (> 0)';
             isValid = false;
         } else {
             newErrors.odd1Error = '';
         }
 
-        if (isNaN(odd2Parsed) || odd2Parsed <= 0) {
+        if (isNaN(odd2Parsed)) {
+            newErrors.odd2Error = 'Please enter a valid number for Odd 2';
+            isValid = false;
+        } else if (odd2Parsed <= 0) {
             newErrors.odd2Error = 'Enter valid Odd 2 (> 0)';
             isValid = false;
         } else {
             newErrors.odd2Error = '';
         }
 
-        if (isNaN(totalStakeParsed) || totalStakeParsed <= 0) {
-            newErrors.totalStakeError = 'Enter valid Total Stake (> 0)';
+        if (isNaN(totalStakeParsed)) {
+            newErrors.totalStakeError = 'Please enter a valid number for Stake'; // Specific error for non-numeric
+            isValid = false;
+        } else if (totalStakeParsed <= 0) {
+            newErrors.totalStakeError = 'Enter valid Total Stake (> 0)'; // Original error for <= 0
             isValid = false;
         } else {
             newErrors.totalStakeError = '';
@@ -69,6 +78,14 @@ const SureBetCalculator: React.FC = () => {
         const odd1Parsed = parseFloat(odd1);
         const odd2Parsed = parseFloat(odd2);
         const totalStakeParsed = parseFloat(totalStake);
+
+        if (totalStakeParsed <= 1e-6) { // Check for near-zero total stake to prevent division by zero in ratios
+            setResult(null);
+            setStake1('Auto');
+            setStake2('Auto');
+            setIsCalculated(false);
+            return;
+        }
 
         const arbitrageSumInverseOdds = (1 / odd1Parsed) + (1 / odd2Parsed);
         const stake1Calculated =
@@ -94,8 +111,8 @@ const SureBetCalculator: React.FC = () => {
             profitPercentage: parseFloat(roundedProfitPercentage),
             payout1: payout1Calculated,
             payout2: payout2Calculated,
-            originalStake1Ratio: stake1Calculated / totalStakeParsed, // Store ratio
-            originalStake2Ratio: stake2Calculated / totalStakeParsed, // Store ratio
+            originalStake1Ratio: stake1Calculated / totalStakeParsed,
+            originalStake2Ratio: stake2Calculated / totalStakeParsed,
         });
 
         setStake1(stake1Calculated.toFixed(2));
@@ -122,24 +139,34 @@ const SureBetCalculator: React.FC = () => {
         const newStake1 = parseFloat(value);
 
         if (!isNaN(newStake1) && newStake1 >= 0) {
-            if (result) { // If calculation has been done and we have a result
-                const originalTotalStake = parseFloat(totalStake); // Use current totalStake for ratio calculation
+            const odd1Parsed = parseFloat(odd1);
+            const odd2Parsed = parseFloat(odd2);
+
+            if (isNaN(odd1Parsed) || odd1Parsed <= 0 || isNaN(odd2Parsed) || odd2Parsed <= 0) {
+                setStake1(value);
+                setStake2('Auto');
+                setTotalStake(value);
+                setResult(null);
+                setIsCalculated(false);
+                return;
+            }
+
+
+            if (result) {
+                const originalTotalStake = parseFloat(totalStake);
                 const originalStake1Ratio = result.originalStake1Ratio || 0;
                 const originalStake2Ratio = result.originalStake2Ratio || 0;
 
-                const newTotalStake = newStake1 / originalStake1Ratio; // Calculate new total stake based on stake1 and original ratio
+                const newTotalStake = newStake1 / originalStake1Ratio;
                 const newStake2 = newTotalStake * originalStake2Ratio;
 
-
-                const odd1Parsed = parseFloat(odd1);
-                const odd2Parsed = parseFloat(odd2);
 
                 if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && odd1Parsed > 0 && odd2Parsed > 0) {
 
 
                     const payout1Calculated = newStake1 * odd1Parsed;
                     const payout2Calculated = newStake2 * odd2Parsed;
-                    const profit = payout1Calculated - newTotalStake; // Profit based on new total stake
+                    const profit = payout1Calculated - newTotalStake;
                     const profitPercentage = (profit / newTotalStake) * 100;
                     const roundedProfitPercentage = profitPercentage.toFixed(2);
 
@@ -154,12 +181,10 @@ const SureBetCalculator: React.FC = () => {
                         profitPercentage: parseFloat(roundedProfitPercentage),
                         payout1: payout1Calculated,
                         payout2: payout2Calculated,
-                        originalStake1Ratio: originalStake1Ratio, // Keep original ratios
+                        originalStake1Ratio: originalStake1Ratio,
                         originalStake2Ratio: originalStake2Ratio,
                     });
-                    setIsCalculated(true);
-
-                } else { // Should not happen ideally as odds are validated before calculation, but for safety
+                } else {
                     setStake1(value);
                     setStake2('Auto');
                     setTotalStake('Auto');
@@ -168,10 +193,10 @@ const SureBetCalculator: React.FC = () => {
                 }
 
 
-            } else { // No previous calculation
+            } else {
                 setStake1(value);
                 setStake2('Auto');
-                setTotalStake(value); // Total stake becomes stake1 if auto
+                setTotalStake(value);
                 setResult(null);
                 setIsCalculated(false);
             }
@@ -187,7 +212,19 @@ const SureBetCalculator: React.FC = () => {
     const handleStake2Change = useCallback((value: string) => {
         const newStake2 = parseFloat(value);
         if (!isNaN(newStake2) && newStake2 >= 0) {
-            if (result) { // If calculation has been done
+            const odd1Parsed = parseFloat(odd1);
+            const odd2Parsed = parseFloat(odd2);
+
+            if (isNaN(odd1Parsed) || odd1Parsed <= 0 || isNaN(odd2Parsed) || odd2Parsed <= 0) {
+                setStake1('Auto');
+                setStake2(value);
+                setTotalStake(value);
+                setResult(null);
+                setIsCalculated(false);
+                return;
+            }
+
+            if (result) {
                 const originalTotalStake = parseFloat(totalStake);
                 const originalStake1Ratio = result.originalStake1Ratio || 0;
                 const originalStake2Ratio = result.originalStake2Ratio || 0;
@@ -196,14 +233,11 @@ const SureBetCalculator: React.FC = () => {
                 const newStake1 = newTotalStake * originalStake1Ratio;
 
 
-                const odd1Parsed = parseFloat(odd1);
-                const odd2Parsed = parseFloat(odd2);
-
                 if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && odd1Parsed > 0 && odd2Parsed > 0) {
 
                     const payout1Calculated = newStake1 * odd1Parsed;
                     const payout2Calculated = newStake2 * odd2Parsed;
-                    const profit = payout2Calculated - newTotalStake; // Profit based on payout 2 and new total stake
+                    const profit = payout2Calculated - newTotalStake;
                     const profitPercentage = (profit / newTotalStake) * 100;
                     const roundedProfitPercentage = profitPercentage.toFixed(2);
 
@@ -217,11 +251,10 @@ const SureBetCalculator: React.FC = () => {
                         profitPercentage: parseFloat(roundedProfitPercentage),
                         payout1: payout1Calculated,
                         payout2: payout2Calculated,
-                        originalStake1Ratio: originalStake1Ratio, // Keep original ratios
+                        originalStake1Ratio: originalStake1Ratio,
                         originalStake2Ratio: originalStake2Ratio,
                     });
-                    setIsCalculated(true);
-                } else { // Safety check for odds validity
+                } else {
                     setStake1('Auto');
                     setStake2(value);
                     setTotalStake('Auto');
@@ -229,10 +262,10 @@ const SureBetCalculator: React.FC = () => {
                     setIsCalculated(false);
                 }
 
-            } else { // No previous calculation
+            } else {
                 setStake2(value);
                 setStake1('Auto');
-                setTotalStake(value); // Total stake becomes stake2 if auto
+                setTotalStake(value);
                 setResult(null);
                 setIsCalculated(false);
             }
