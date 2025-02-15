@@ -1,0 +1,142 @@
+import { StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+    scrollContainer: {
+        paddingTop: 30
+    },
+    container: {
+        flex: 1,
+        padding: 10,
+        paddingTop: 25,
+        backgroundColor: '#f0f2f5',
+        justifyContent: 'center',
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        textAlign: 'center',
+        color: '#34495e',
+    },
+    card: {
+        backgroundColor: '#fff',
+        borderRadius: 12,
+        padding: 18,
+        marginBottom: 15,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    inputGroupLabel: {
+        fontSize: 20,
+        fontWeight: '600',
+        color: '#34495e',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    inputGroup: {
+        marginBottom: 12,
+    },
+    inputLabel: {
+        fontSize: 16,
+        color: '#555',
+        marginBottom: 6,
+        fontWeight: '500',
+    },
+    inputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#fcfcfc',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        height: 40,
+    },
+    inputRowError: {
+        borderColor: '#e74c3c',
+    },
+    icon: {
+        marginRight: 10,
+        color: '#777',
+        fontSize: 18,
+    },
+    input: {
+        height: 55,
+        fontSize: 16,
+        flex: 1,
+        color: '#333',
+    },
+    errorText: {
+        color: '#e74c3c',
+        fontSize: 13,
+        marginTop: 4,
+        marginLeft: 4,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        marginTop: 10,
+        marginBottom: 20,
+    },
+    calculateButton: {
+        backgroundColor: '#3498db',
+        paddingVertical: 10,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+        flex: 1,
+        marginHorizontal: 5,
+    },
+    resetButton: {
+        backgroundColor: '#e07a5f',
+        paddingVertical: 10,
+        borderRadius: 12,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
+        flex: 1,
+        marginHorizontal: 5,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: '600',
+    },
+    resultsLabel: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#34495e',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    resultText: {
+        fontSize: 17,
+        marginBottom: 5,
+        color: '#4a6572',
+        fontWeight: '500',
+        lineHeight: 24,
+    },
+    resultValue: {
+        fontWeight: 'bold',
+        color: '#2c3e50',
+    },
+    profitText: {
+        fontSize: 20,
+        fontWeight: '700',
+        textAlign: 'center',
+        color: '#27ae60',
+    },
+});
+
+export default styles;
