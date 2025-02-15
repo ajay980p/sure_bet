@@ -1,7 +1,7 @@
 {
     "expo": {
         "name": "sure_bet_calculator",
-        "slug": "sure_bet_calculator",
+        "slug": "sure_bet",
         "version": "1.0.0",
         "orientation": "portrait",
         "icon": "./assets/images/icon.png",

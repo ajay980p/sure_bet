@@ -24,7 +24,6 @@ const OptionalStakeAdjustments: React.FC<OptionalStakeAdjustmentsProps> = ({ sta
                         value={stake1}
                         onChangeText={handleStake1Change}
                         placeholder="Auto"
-                        onFocus={() => handleStake1Change('')} // Clear on focus to allow manual input
                     />
                 </View>
             </View>
@@ -39,7 +38,6 @@ const OptionalStakeAdjustments: React.FC<OptionalStakeAdjustmentsProps> = ({ sta
                         value={stake2}
                         onChangeText={handleStake2Change}
                         placeholder="Auto"
-                        onFocus={() => handleStake2Change('')} // Clear on focus to allow manual input
                     />
                 </View>
             </View>
