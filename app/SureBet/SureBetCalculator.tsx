@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'; // Import useRef
+import React, { useState, useRef, useCallback } from 'react'; // Import useRef
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -22,9 +22,8 @@ const SureBetCalculator: React.FC = () => {
         odd2Error: '',
         totalStakeError: '',
     });
-    const calculationTimeout = useRef<ReturnType<typeof setTimeout>>(null); // useRef for debouncing
 
-    const validateInputs = () => {
+    const validateInputs = useCallback(() => { // Use useCallback
         let isValid = true;
         const newErrors = { ...errorMessages };
 
@@ -55,10 +54,10 @@ const SureBetCalculator: React.FC = () => {
 
         setErrorMessages(newErrors);
         return isValid;
-    };
+    }, [odd1, odd2, totalStake, errorMessages]); // Dependencies for useCallback
 
 
-    const calculateStakeValues = () => {
+    const calculateStakeValues = useCallback(() => { // Use useCallback
         if (!validateInputs()) {
             return;
         }
@@ -95,73 +94,124 @@ const SureBetCalculator: React.FC = () => {
 
         setStake1(stake1Calculated.toFixed(2));
         setStake2(stake2Calculated.toFixed(2));
-    };
+    }, [odd1, odd2, totalStake, validateInputs]); // Dependencies for useCallback
 
-    const handleStake1Change = (value: string) => {
+    const handleTotalStakeChange = useCallback((value: string) => {
+        const newTotalStake = parseFloat(value);
+        if (!isNaN(newTotalStake) && newTotalStake > 0) {
+            setTotalStake(value);
+        } else {
+            setErrorMessages({ ...errorMessages, totalStakeError: 'Enter valid Total Stake (> 0)' });
+            setTotalStake('');
+        }
+    }, [errorMessages]);
+
+    const handleStake1Change = useCallback((value: string) => {
+        const data = result?.payout1 / result?.payout2;
+
+        console.log("Data printing handleStake1Change : ", data)
         const newStake1 = parseFloat(value);
         if (!isNaN(newStake1) && newStake1 >= 0) {
             const odd1Parsed = parseFloat(odd1);
             const odd2Parsed = parseFloat(odd2);
             const totalStakeParsed = parseFloat(totalStake);
 
-            const stake2Calculated =
-                ((1 / odd2Parsed) * totalStakeParsed - newStake1 * (1 / odd1Parsed)) /
-                ((1 / odd1Parsed) + (1 / odd2Parsed));
-            const payout1Calculated = newStake1 * odd1Parsed; // Calculate payout for Bet 1
-            const payout2Calculated = stake2Calculated * odd2Parsed; // Calculate payout for Bet 2
+            if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && !isNaN(totalStakeParsed) && odd1Parsed > 0 && odd2Parsed > 0 && totalStakeParsed > 0) {
+                const stake2Calculated =
+                    ((1 / odd2Parsed) * totalStakeParsed - newStake1 * (1 / odd1Parsed)) /
+                    ((1 / odd1Parsed) + (1 / odd2Parsed));
 
+                if (stake2Calculated >= 0) { // Ensure stake2 is not negative
+                    const payout1Calculated = newStake1 * odd1Parsed;
+                    const payout2Calculated = stake2Calculated * odd2Parsed;
+                    const profit = payout1Calculated - totalStakeParsed;
+                    const profitPercentage = (profit / totalStakeParsed) * 100;
+                    const roundedProfitPercentage = profitPercentage.toFixed(2);
+
+                    setStake1(value);
+                    setStake2(stake2Calculated.toFixed(2));
+                    setTotalStake((newStake1 + stake2Calculated).toFixed(2)); // Update total stake here
+
+                    setResult({
+                        stake1: newStake1,
+                        stake2: stake2Calculated,
+                        profit: profit,
+                        profitPercentage: parseFloat(roundedProfitPercentage),
+                        payout1: payout1Calculated,
+                        payout2: payout2Calculated,
+                    });
+                } else {
+                    setStake1(value);
+                    setStake2('0.00'); // Or handle negative stake2 as needed, perhaps set error
+                    setTotalStake(value); // If stake2 is 0, total stake becomes stake1
+                    setResult(null); // Clear results as it's no longer a sure bet scenario
+                }
+            } else {
+                setStake1(value);
+                setStake2('Auto'); // Indicate auto calculation is pending valid odds/stake
+                setTotalStake(value); // Total stake becomes stake1 if auto
+                setResult(null);
+            }
+        } else {
             setStake1(value);
-            setStake2(stake2Calculated.toFixed(2));
-
-            setResult({
-                stake1: newStake1,
-                stake2: stake2Calculated,
-                profit: totalStakeParsed - (newStake1 + stake2Calculated),
-                profitPercentage: ((totalStakeParsed - (newStake1 + stake2Calculated)) / totalStakeParsed) * 100,
-                payout1: payout1Calculated, // Store payout for Bet 1
-                payout2: payout2Calculated, // Store payout for Bet 2
-            });
+            setStake2('Auto');
+            setTotalStake(value); // Total stake becomes stake1 if auto
+            setResult(null);
         }
-    };
+    }, [odd1, odd2, totalStake, setResult, setStake1, setStake2, setTotalStake]); // ADDED setTotalStake dependency
 
-    const handleStake2Change = (value: string) => {
+    const handleStake2Change = useCallback((value: string) => {
         const newStake2 = parseFloat(value);
         if (!isNaN(newStake2) && newStake2 >= 0) {
             const odd1Parsed = parseFloat(odd1);
             const odd2Parsed = parseFloat(odd2);
             const totalStakeParsed = parseFloat(totalStake);
 
-            const stake1Calculated =
-                ((1 / odd1Parsed) * totalStakeParsed - newStake2 * (1 / odd2Parsed)) /
-                ((1 / odd1Parsed) + (1 / odd2Parsed));
-            const payout1Calculated = stake1Calculated * odd1Parsed; // Calculate payout for Bet 1
-            const payout2Calculated = newStake2 * odd2Parsed; // Calculate payout for Bet 2
+            if (!isNaN(odd1Parsed) && !isNaN(odd2Parsed) && !isNaN(totalStakeParsed) && odd1Parsed > 0 && odd2Parsed > 0 && totalStakeParsed > 0) {
 
-            setStake2(value);
-            setStake1(stake1Calculated.toFixed(2));
-            setResult({
-                stake1: stake1Calculated,
-                stake2: newStake2,
-                profit: totalStakeParsed - (stake1Calculated + newStake2),
-                profitPercentage: ((totalStakeParsed - (stake1Calculated + newStake2)) / totalStakeParsed) * 100,
-                payout1: payout1Calculated, // Store payout for Bet 1
-                payout2: payout2Calculated, // Store payout for Bet 2
-            });
-        }
-    };
+                const stake1Calculated =
+                    ((1 / odd1Parsed) * totalStakeParsed - newStake2 * (1 / odd2Parsed)) /
+                    ((1 / odd1Parsed) + (1 / odd2Parsed));
 
-    const handleTotalStakeChange = (value: string) => {
-        const newTotalStake = parseFloat(value);
-        if (!isNaN(newTotalStake) && newTotalStake > 0) {
-            setTotalStake(value);
-            // Debounce calculateStakeValues to prevent excessive calculations
-            // clearTimeout(calculationTimeout.current); // Clear any existing timeout
-            // calculationTimeout.current = setTimeout(calculateStakeValues, 500); // Wait 500ms after typing stops
+                if (stake1Calculated >= 0) { // Ensure stake1 is not negative
+
+                    const payout1Calculated = stake1Calculated * odd1Parsed;
+                    const payout2Calculated = newStake2 * odd2Parsed;
+                    const profit = payout1Calculated - totalStakeParsed;
+                    const profitPercentage = (profit / totalStakeParsed) * 100;
+                    const roundedProfitPercentage = profitPercentage.toFixed(2);
+
+                    setStake2(value);
+                    setStake1(stake1Calculated.toFixed(2));
+                    setTotalStake((newStake2 + stake1Calculated).toFixed(2)); // Update total stake here
+                    setResult({
+                        stake1: stake1Calculated,
+                        stake2: newStake2,
+                        profit: profit,
+                        profitPercentage: parseFloat(roundedProfitPercentage),
+                        payout1: payout1Calculated,
+                        payout2: payout2Calculated,
+                    });
+                } else {
+                    setStake2(value);
+                    setStake1('0.00'); // Or handle negative stake1 as needed, perhaps set error
+                    setTotalStake(value); // If stake1 is 0, total stake becomes stake2
+                    setResult(null); // Clear results as it's no longer a sure bet scenario
+                }
+            } else {
+                setStake2(value);
+                setStake1('Auto'); // Indicate auto calculation is pending valid odds/stake
+                setTotalStake(value); // Total stake becomes stake2 if auto
+                setResult(null);
+            }
         } else {
-            setErrorMessages({ ...errorMessages, totalStakeError: 'Enter valid Total Stake (> 0)' });
-            setTotalStake('');
+            setStake2(value);
+            setStake1('Auto');
+            setTotalStake(value); // Total stake becomes stake2 if auto
+            setResult(null);
         }
-    };
+    }, [odd1, odd2, totalStake, setResult, setStake1, setStake2, setTotalStake]); // ADDED setTotalStake dependency
+
 
     const clearError = (fieldName: 'odd1Error' | 'odd2Error' | 'totalStakeError') => {
         setErrorMessages({ ...errorMessages, [fieldName]: '' });
@@ -180,7 +230,6 @@ const SureBetCalculator: React.FC = () => {
             totalStakeError: '',
         });
     };
-
 
     return (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -280,7 +329,7 @@ const SureBetCalculator: React.FC = () => {
                     </View>
 
                     {result && (
-                        <View style={styles.results}> {/* Changed to styles.results - removed resultsCard and directly using results style within the same card */}
+                        <View style={styles.results}>
                             <Text style={styles.resultText}>Total Stake : <Text style={styles.resultValue}>{totalStake}</Text></Text>
                             <Text style={styles.resultText}>Total Payout : <Text style={styles.resultValue}>{parseFloat(totalStake) + parseFloat(result.profit.toFixed(2))}</Text></Text>
                             <Text style={styles.resultText}>Total Profit : <Text style={styles.resultValue}>{result.profit.toFixed(2)}</Text></Text>
