@@ -6,7 +6,7 @@ import StakeInput from './StakeInput';
 import OptionalStakeAdjustments from './OptionalStakeAdjustments';
 import CalculationButtons from './CalculationButtons';
 import ResultsCard from './ResultsCard';
-import { validateInputs, calculateStakeValues } from '../../utils/calculatorUtils';
+import { validateInputs, calculateStakeValues } from '../../utils/CalculatorUtils';
 
 export interface Result {
     stake1: number;
